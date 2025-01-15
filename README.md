@@ -1,5 +1,5 @@
-# Painters-Paintings-Institutions-SQL-database
-For the Data Engineering 1 course at CEU. Project 1: relational databases in SQL.
+# Painters, Paintings, Institutions and Styles: An SQL database with an ETL pipeline and analytics
+(This was a project for the Data Engineering 1 course at CEU; project 1: relational databases in SQL.)
 
 ## A data warehouse for analyzing paintings and painters
 
@@ -38,9 +38,9 @@ The datasets which are used to create the painting table and other tables are no
 
 ## Analytical plan
 
-*What do we have to work with?*
+*What do we have that we can work with?*
 
-The PainterPalette dataset includes a lot of information (29 attributes) about painters, in several categories:
+The [PainterPalette](https://github.com/me9hanics/PainterPalette) dataset includes plenty information (~30 attributes) of 10000+ painters, in several categories:
 
 - Biography data: Nationality/citizenship, name, birth and death years and places, gender - this is what we will mostly use.
 - Artistic style data
@@ -51,7 +51,8 @@ The PainterPalette dataset includes a lot of information (29 attributes) about p
 - Friends, coworkers (very limited data)
 - Quantities of paintings, in styles, etc.
 
-For the type of analytics I would like to run, I will only rely on biography data of painters directly, but I used the artists' movement and painting schools to fill up the movement and institution tables. These have a place of origin, and the movements along with styles have a beginning and end date.
+For the type of analytics I run, only relying on biography data of painters directly is sufficient, but I used the artists' movement and painting schools to fill up the movement and institution tables.
+These have a place of origin, and the movements along with styles have a beginning and end date.
 
 The paintings datasets also include notable information about the artists, but most importantly include stylistic and temporal information, and thematic information (e.g. the painting is a portrait, a landscape, is a religious painting etc.).
 
@@ -78,9 +79,9 @@ The steps of the ETL pipeline upon painting addition:
 The first two steps require updating the table that we trigger on when being updated, and that can only be done with BEFORE triggers (otherwise there would be an infinite loop). The last three steps are done in the AFTER trigger.<br>
 The steps of adding a new artist are similar, but there is no 5th step as the analytical table does not change.
 
-## Separate files/layers
+## Structure (separate layers) and files
 
-The separate files/layers are as follows, and should be ran in the following order:
+The separate files/layers are as follows, and **should be run in the following order**:
 
 **`operational_layer_data_processing.sql`**: An operational data layer in SQL, designed for MySQL local instances: Importing data of painters and paintings, and creating relations. Firstly, data of painters are loaded into the created table of artists, then the institutions, artist-institutions, movements and styles tables are created with the right constraints. I then create temporary tables for the two datasets of paintings (Art500k and WikiArt). Only then I create the combined table of paintings, with constraints and foreign keys to save time (the paintings table is massive), and I fill it up with the two datasets' instances, dropping the temporary tables afterwards.<br>
 As last steps, I fill up columns with the right values: firstly I add instances of movements and styles based on the movements from the painters table and styles from the paintings table. These are stored in the style and movement column, I do not need to take multiple columns for the information, however styles for one instance are separated by commas (e.g. *Expressionism, Pointillism*), therefore I select each value separated by a comma - this can be effectively done by this query:
