@@ -1,5 +1,5 @@
-# Painters, Paintings, Institutions and Styles: An SQL database with an ETL pipeline and analytics
-(This was a project for the Data Engineering 1 course at CEU; project 1: relational databases in SQL.)
+# Painters, Paintings, Institutions and Styles: SQL data warehouse, ETL pipeline and analytics
+(This was a project for the Data Engineering 1 course at CEU; project 1.)
 
 ## A data warehouse for analyzing paintings and painters
 
@@ -10,7 +10,7 @@ With information (data) about painters and their paintings, institutions and mov
 - Which painters have the most paintings preserved (assuming most paintings of famous painters are stored in the database)?
 
 These are questions that may change over time, e.g. institutions may change their focus and we might have new institutions, painters, or styles as time goes on. We need to prepare a data warehouse for this analysis to be easily run anytime, on updated data.<br>
-In order to answer such questions, we need to create and for future purposes maintain a relational database, querying relational information (i.e. information based on the connections between styles-paintings-painters-movements-institutions). This project continues my work of creating such databases and tools, but is the only one designed with a relational structure and designed to be maintainably updated (and queried). 
+In order to answer such questions, we need to create and for future purposes maintain a relational database, querying relational information (information based on styles-paintings-painters-movements-institutions relationships). This project is a continuation of my work on creating datasets and tools for art research.
 
 ## Technical details
 
@@ -21,7 +21,7 @@ The collected datasets are stored in the following CSV files: `artists.csv` for 
 From these, I derived also tables for institutions, movements (one per artist) and styles (of paintings, a painting can have multiple styles even).<br>
 To add extra information to the institution, movement and style tables, I added location information from the file `institutions_origins.csv`, `movements_origins.csv` and `styles_origins.csv` files. (These include an instance for each institution/movement/style, and the origin location of it, "predicted" by Generative AI (using Python) to have broader information.)
 
-The files should be ran in the following order: **`operational_layer_data_processing.sql`**, **`analytics_table.sql`**, **`pipeline.sql`**, **`data_marts.sql`**.
+The files should be run in the following order: **`operational_layer_data_processing.sql`**, **`analytics_table.sql`**, **`pipeline.sql`**, **`data_marts.sql`**.
 
 ## The structure of the created database
 
@@ -66,7 +66,7 @@ Specifically, for viewing the movement-style and institution-style relations, we
 The project needs to be designed to handle newly added painting data (to the Paintings table) for analytics. To continuously update our analytical table when a new painting is added, we need to create an **ETL pipeline**. This is done in the `pipeline.sql`, when a new painting is added, on a trigger the ETL pipeline firstly updates the tables of the relational database, and then updates the analytical table. We also trigger on updates of the artist table, updating the movements and artist-institutions tables if needed, but in this case we do not to update the analytical table. (Ideally, for every table update e.g. updating the institutions table, we'd refresh any instance with that institution in the analytics table, but that is out of scope now.)<br>
 With the ETL pipeline we keep the analytical table up-to-date.<br>
 (Side note: if I were to use Materialized Views instead of simple Views for the data marts, as they are physical copies I would need to update them too, at least periodically.)<br>
-Extraction is done by triggering the pipeline when a new painting is added, transformation is done by updating the tables of the relational database, and loading is done by updating the analytical table.
+Extraction is done by triggering the pipeline when a new painting is added, processing this information and updating the tables, then loading fresh data into the analytical table.
 
 The steps of the ETL pipeline upon painting addition:
 
@@ -125,9 +125,9 @@ Because many paintings do not have a painter (stored in our database), and many 
 **`data_marts_analytics.sql`**: The "data mart" layer. Building on the analytical table, contains the creation of views for specific queries:
 
 - the most common styles per institution
-- the most common movements per style and vica versa, sorted by, the most common styles per movement, etc.
+- the most common movements per style and vice versa, sorted by, the most common styles per movement, etc.
 - painters with the most paintings, movements with the least paintings
 
-These are created as views, simultating data marts, and can be updated with new data by running the queries again. Views in MySQL are unmaterialized, which allow for efficiently querying, without duplicating the data, unlike materialized views. (Materialized views are not implemented in this project.)
+These are created as views, simulating data marts, and can be updated with new data by running the queries again. Views in MySQL are unmaterialized, which allow for efficiently querying, without duplicating the data, unlike materialized views. (Materialized views are not implemented in this project.)
 
 To simplify some of the analytics, in the analytical table I did not group instances together (e.g. one painting with multiple styles will have an instance for each style, the same for each painter institution), i.e. some paintings have multiple instances, differing in style or artist institutions. Using this is perfect for most of the queries, but for analytics where the number of paintings matter or other cases, I created a view called `GroupedPaintData` that combines instances of paintings with distinct styles and institutions. The institutions and styles, and their locations are concatenated into one string. This view helps in reducing the redundant grouping we'd have to do for many queries if we just use `PaintData`.
